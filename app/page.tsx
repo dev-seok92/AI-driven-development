@@ -2,37 +2,12 @@ import { PromptInput } from '@/components/PromptInput'
 import { CommunityFeedCard } from '@/components/CommunityFeedCard'
 import { mockPosts } from '@/utils/mockData'
 import { Button } from '@/components/ui/button'
-import { Palette, Images, Zap, Users } from 'lucide-react'
+import { Zap, Users, Palette, Images } from 'lucide-react'
 import Link from 'next/link'
 
 export default function Home() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
-            {/* 헤더 섹션 */}
-            <header className="bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-50">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            AI 이미지 생성기
-                        </h1>
-                        <nav className="flex items-center gap-4">
-                            <Link href="/generate">
-                                <Button variant="ghost" size="sm" className="gap-2">
-                                    <Palette className="h-4 w-4" />
-                                    생성하기
-                                </Button>
-                            </Link>
-                            <Link href="/gallery">
-                                <Button variant="ghost" size="sm" className="gap-2">
-                                    <Images className="h-4 w-4" />
-                                    갤러리
-                                </Button>
-                            </Link>
-                        </nav>
-                    </div>
-                </div>
-            </header>
-
             <main className="container mx-auto px-4 py-8 space-y-16">
                 {/* 히어로 섹션 */}
                 <section className="text-center pt-8 pb-12">
