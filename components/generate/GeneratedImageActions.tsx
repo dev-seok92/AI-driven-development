@@ -15,7 +15,8 @@ import {
 export function GeneratedImageActions({
     imageUrl,
     prompt,
-    styleOptions
+    styleOptions,
+    generateOptions
 }: IGeneratedImageActionsProps) {
     const { toast } = useToast()
     const { addImage } = useGalleryStore()

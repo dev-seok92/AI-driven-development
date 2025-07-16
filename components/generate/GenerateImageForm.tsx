@@ -3,15 +3,17 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { StyleOptions } from './StyleOptions'
+import { GenerateOptions } from './GenerateOptions'
 import { ImageGeneration } from './ImageGeneration'
 import { GeneratedImageActions } from './GeneratedImageActions'
 import { Textarea } from '@/components/ui/textarea'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { IStyleOptions, IGenerateResponse } from '@/types'
+import { IStyleOptions, IGenerateOptions, IGenerateResponse, DEFAULT_GENERATE_OPTIONS } from '@/types'
 import { useToast } from '@/hooks/use-toast'
 import { validatePrompt, getErrorMessage } from '@/lib/utils'
 
 const DEFAULT_STYLE_OPTIONS: IStyleOptions = {
+    generationMode: 'general' as const,
     artStyle: '디지털아트',
     colorTone: '밝은'
 }
@@ -23,6 +25,9 @@ export function GenerateImageForm() {
     const [error, setError] = useState('')
     const [styleOptions, setStyleOptions] = useState<IStyleOptions>(
         DEFAULT_STYLE_OPTIONS
+    )
+    const [generateOptions, setGenerateOptions] = useState<IGenerateOptions>(
+        DEFAULT_GENERATE_OPTIONS
     )
     const [generatedImageUrl, setGeneratedImageUrl] = useState('')
     const [isGenerating, setIsGenerating] = useState(false)
@@ -58,7 +63,8 @@ export function GenerateImageForm() {
                 },
                 body: JSON.stringify({
                     prompt: prompt.trim(),
-                    styleOptions
+                    styleOptions,
+                    generateOptions
                 })
             })
 
@@ -133,6 +139,11 @@ export function GenerateImageForm() {
                 onChange={setStyleOptions} 
             />
 
+            <GenerateOptions
+                options={generateOptions}
+                onChange={setGenerateOptions}
+            />
+
             <ImageGeneration
                 onGenerate={handleGenerate}
                 isGenerating={isGenerating}
@@ -144,6 +155,7 @@ export function GenerateImageForm() {
                     imageUrl={generatedImageUrl}
                     prompt={prompt}
                     styleOptions={styleOptions}
+                    generateOptions={generateOptions}
                 />
             )}
         </div>

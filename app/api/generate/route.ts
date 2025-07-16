@@ -1,6 +1,20 @@
 import { NextResponse } from 'next/server';
 import Replicate from 'replicate';
-import { IGenerateRequest, IGenerateResponse, IStyleOptions, ART_STYLES, COLOR_TONES, ArtStyle, ColorTone } from '@/types';
+import { 
+    IGenerateRequest, 
+    IGenerateResponse, 
+    IStyleOptions, 
+    IGenerateOptions, 
+    ART_STYLES, 
+    COLOR_TONES, 
+    LOGO_STYLES, 
+    LOGO_COLOR_TONES, 
+    DEFAULT_GENERATE_OPTIONS, 
+    ArtStyle, 
+    ColorTone, 
+    LogoStyle, 
+    LogoColorTone 
+} from '@/types';
 import { createRateLimiter, sanitizeInput, containsInappropriateContent } from '@/lib/utils';
 
 // 환경변수 검증 및 로깅
@@ -25,7 +39,7 @@ const replicate = new Replicate({
 });
 
 // 입력 검증 함수
-function validateInput(prompt: string, styleOptions: unknown): { isValid: boolean; message?: string } {
+function validateInput(prompt: string, styleOptions: unknown, generateOptions?: unknown): { isValid: boolean; message?: string } {
     if (!prompt || typeof prompt !== 'string') {
         return { isValid: false, message: '프롬프트가 누락되었습니다.' };
     }
@@ -49,14 +63,52 @@ function validateInput(prompt: string, styleOptions: unknown): { isValid: boolea
         return { isValid: false, message: '스타일 옵션이 누락되었습니다.' };
     }
 
-    const options = styleOptions as Record<string, unknown>;
+    const options = styleOptions as IStyleOptions;
     
-    if (!ART_STYLES.includes(options.artStyle as ArtStyle)) {
-        return { isValid: false, message: '유효하지 않은 아트 스타일입니다.' };
+    // 생성 모드 검증
+    if (options.generationMode !== 'general' && options.generationMode !== 'logo') {
+        return { isValid: false, message: '유효하지 않은 생성 모드입니다.' };
     }
 
-    if (!COLOR_TONES.includes(options.colorTone as ColorTone)) {
-        return { isValid: false, message: '유효하지 않은 색조 옵션입니다.' };
+    if (options.generationMode === 'logo') {
+        // 로고 생성 모드 검증
+        if (!options.logoStyle || !LOGO_STYLES.includes(options.logoStyle as LogoStyle)) {
+            return { isValid: false, message: '유효하지 않은 로고 스타일입니다.' };
+        }
+
+        if (!options.logoColorTone || !LOGO_COLOR_TONES.includes(options.logoColorTone as LogoColorTone)) {
+            return { isValid: false, message: '유효하지 않은 로고 색조입니다.' };
+        }
+    } else {
+        // 일반 이미지 생성 모드 검증
+        if (!ART_STYLES.includes(options.artStyle as ArtStyle)) {
+            return { isValid: false, message: '유효하지 않은 아트 스타일입니다.' };
+        }
+
+        if (!COLOR_TONES.includes(options.colorTone as ColorTone)) {
+            return { isValid: false, message: '유효하지 않은 색조 옵션입니다.' };
+        }
+    }
+
+    // 생성 옵션 검증
+    if (generateOptions && typeof generateOptions === 'object') {
+        const genOptions = generateOptions as Record<string, unknown>;
+        
+        if (genOptions.seed !== undefined && (typeof genOptions.seed !== 'number' || genOptions.seed < 0)) {
+            return { isValid: false, message: '시드 값은 0 이상의 정수여야 합니다.' };
+        }
+        
+        if (genOptions.num_outputs !== undefined && (typeof genOptions.num_outputs !== 'number' || genOptions.num_outputs < 1 || genOptions.num_outputs > 4)) {
+            return { isValid: false, message: '출력 수는 1-4 사이여야 합니다.' };
+        }
+        
+        if (genOptions.output_quality !== undefined && (typeof genOptions.output_quality !== 'number' || genOptions.output_quality < 0 || genOptions.output_quality > 100)) {
+            return { isValid: false, message: '품질은 0-100 사이여야 합니다.' };
+        }
+        
+        if (genOptions.num_inference_steps !== undefined && (typeof genOptions.num_inference_steps !== 'number' || genOptions.num_inference_steps < 1 || genOptions.num_inference_steps > 4)) {
+            return { isValid: false, message: '추론 단계는 1-4 사이여야 합니다.' };
+        }
     }
 
     return { isValid: true };
@@ -64,27 +116,56 @@ function validateInput(prompt: string, styleOptions: unknown): { isValid: boolea
 
 // 스타일 매핑 함수
 function getStylePrompt(styleOptions: IStyleOptions): string {
-    const styleMapping = {
-        artStyle: {
-            '디지털아트': 'digital art, highly detailed, professional quality',
-            '수채화': 'watercolor painting, soft brushstrokes, artistic',
-            '유화': 'oil painting, textured brushstrokes, canvas',
-            '펜화': 'pen and ink drawing, line art, detailed linework',
-            '연필화': 'pencil sketch, detailed shading, graphite drawing'
-        },
-        colorTone: {
-            '밝은': 'bright colors, vibrant, high key lighting',
-            '어두운': 'dark tones, moody, low key lighting',
-            '파스텔': 'pastel colors, soft tones, gentle hues',
-            '흑백': 'black and white, monochrome, grayscale',
-            '컬러풀': 'colorful, saturated colors, rainbow palette'
-        }
-    };
+    if (styleOptions.generationMode === 'logo') {
+        // 로고 생성 모드
+        const logoStyleMapping = {
+            logoStyle: {
+                '미니멀': 'minimalist logo, clean design, simple, professional',
+                '모던': 'modern logo, contemporary design, sleek, trendy',
+                '클래식': 'classic logo, traditional design, timeless, elegant',
+                '빈티지': 'vintage logo, retro design, nostalgic, aged aesthetic',
+                '기업형': 'corporate logo, business professional, formal, trustworthy',
+                '창조적': 'creative logo, artistic design, unique, innovative',
+                '대담한': 'bold logo, strong design, impactful, striking',
+                '우아한': 'elegant logo, refined design, sophisticated, graceful'
+            },
+            logoColorTone: {
+                '단색': 'monochrome, single color, solid color scheme',
+                '그라데이션': 'gradient colors, smooth color transitions, dimensional',
+                '네온': 'neon colors, bright fluorescent, glowing effect',
+                '메탈릭': 'metallic colors, shiny finish, premium look',
+                '투명배경': 'transparent background, isolated design, clean cutout'
+            }
+        };
 
-    const artStyleDesc = styleMapping.artStyle[styleOptions.artStyle] || styleOptions.artStyle;
-    const colorToneDesc = styleMapping.colorTone[styleOptions.colorTone] || styleOptions.colorTone;
+        const logoStyleDesc = logoStyleMapping.logoStyle[styleOptions.logoStyle || '미니멀'];
+        const logoColorToneDesc = logoStyleMapping.logoColorTone[styleOptions.logoColorTone || '단색'];
 
-    return `${artStyleDesc}, ${colorToneDesc}`;
+        return `${logoStyleDesc}, ${logoColorToneDesc}, vector style, scalable design`;
+    } else {
+        // 일반 이미지 생성 모드
+        const styleMapping = {
+            artStyle: {
+                '디지털아트': 'digital art, highly detailed, professional quality',
+                '수채화': 'watercolor painting, soft brushstrokes, artistic',
+                '유화': 'oil painting, textured brushstrokes, canvas',
+                '펜화': 'pen and ink drawing, line art, detailed linework',
+                '연필화': 'pencil sketch, detailed shading, graphite drawing'
+            },
+            colorTone: {
+                '밝은': 'bright colors, vibrant, high key lighting',
+                '어두운': 'dark tones, moody, low key lighting',
+                '파스텔': 'pastel colors, soft tones, gentle hues',
+                '흑백': 'black and white, monochrome, grayscale',
+                '컬러풀': 'colorful, saturated colors, rainbow palette'
+            }
+        };
+
+        const artStyleDesc = styleMapping.artStyle[styleOptions.artStyle] || styleOptions.artStyle;
+        const colorToneDesc = styleMapping.colorTone[styleOptions.colorTone] || styleOptions.colorTone;
+
+        return `${artStyleDesc}, ${colorToneDesc}`;
+    }
 }
 
 // IP 주소 가져오기 함수
@@ -131,10 +212,10 @@ export async function POST(request: Request) {
             } as IGenerateResponse, { status: 400 });
         }
 
-        const { prompt, styleOptions } = requestData;
+        const { prompt, styleOptions, generateOptions } = requestData;
 
         // 입력값 검증
-        const validation = validateInput(prompt, styleOptions);
+        const validation = validateInput(prompt, styleOptions, generateOptions);
         if (!validation.isValid) {
             return NextResponse.json({
                 success: false,
@@ -150,10 +231,17 @@ export async function POST(request: Request) {
         const sanitizedPrompt = sanitizeInput(prompt).trim();
         const enhancedPrompt = `${sanitizedPrompt}, ${stylePrompt}, high quality, masterpiece`;
 
+        // 생성 옵션 병합
+        const finalGenerateOptions = {
+            ...DEFAULT_GENERATE_OPTIONS,
+            ...generateOptions
+        };
+
         // Replicate API 호출
         console.log('🚀 Replicate API 호출 시작:', {
             model: "black-forest-labs/flux-schnell",
             enhancedPrompt,
+            generateOptions: finalGenerateOptions,
             timestamp: new Date().toISOString()
         });
 
@@ -161,12 +249,15 @@ export async function POST(request: Request) {
             model: "black-forest-labs/flux-schnell",
             input: {
                 prompt: enhancedPrompt,
-                aspect_ratio: "16:9",
-                num_outputs: 1,
-                go_fast: true,
-                megapixels: "1",
-                output_format: "webp",
-                output_quality: 90,
+                aspect_ratio: finalGenerateOptions.aspect_ratio,
+                num_outputs: finalGenerateOptions.num_outputs,
+                go_fast: finalGenerateOptions.go_fast,
+                megapixels: finalGenerateOptions.megapixels,
+                output_format: finalGenerateOptions.output_format,
+                output_quality: finalGenerateOptions.output_quality,
+                num_inference_steps: finalGenerateOptions.num_inference_steps,
+                disable_safety_checker: finalGenerateOptions.disable_safety_checker,
+                seed: finalGenerateOptions.seed,
                 negative_prompt: "blurry, low quality, distorted, deformed, nsfw, inappropriate content, violence, hate, discrimination"
             }
         });
