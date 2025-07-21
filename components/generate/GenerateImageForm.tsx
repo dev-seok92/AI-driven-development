@@ -33,9 +33,19 @@ export function GenerateImageForm() {
     const [isGenerating, setIsGenerating] = useState(false)
 
     useEffect(() => {
+        // URL 쿼리 파라미터에서 프롬프트 확인
         const urlPrompt = searchParams.get('prompt')
         if (urlPrompt) {
             setPrompt(decodeURIComponent(urlPrompt))
+            return
+        }
+        
+        // 로컬 스토리지에서 저장된 프롬프트 확인
+        const pendingPrompt = localStorage.getItem('pendingPrompt')
+        if (pendingPrompt) {
+            setPrompt(pendingPrompt)
+            // 사용한 프롬프트는 삭제
+            localStorage.removeItem('pendingPrompt')
         }
     }, [searchParams])
 

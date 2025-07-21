@@ -19,13 +19,13 @@ export default function Logo({ className }: ILogoProps) {
             )}
             aria-label="AI 이미지 생성기 홈으로 이동"
         >
-            <div className="w-20 h-20 flex items-center justify-center">
+            <div className="w-12 h-12 flex items-center justify-center">
                 <Image
                     src="/logo.webp"
                     alt="AI 이미지 생성기"
                     width={80}
                     height={80}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain rounded-full"
                     priority
                 />
             </div>

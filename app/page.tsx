@@ -1,11 +1,16 @@
+'use client'
+
 import { PromptInput } from '@/components/PromptInput'
 import { CommunityFeedCard } from '@/components/CommunityFeedCard'
 import { mockPosts } from '@/utils/mockData'
 import { Button } from '@/components/ui/button'
-import { Zap, Users, Palette, Images } from 'lucide-react'
+import { SignUpButton, useUser } from '@clerk/nextjs'
+import { Users, Palette, Zap } from 'lucide-react'
 import Link from 'next/link'
 
 export default function Home() {
+    const { isSignedIn, isLoaded } = useUser()
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
             <main className="container mx-auto px-4 py-8 space-y-16">
@@ -63,55 +68,40 @@ export default function Home() {
                         <h3 className="text-3xl font-bold text-gray-900">
                             커뮤니티 피드
                         </h3>
-                        <Button 
-                            variant="outline" 
-                            asChild
-                            className="gap-2"
-                        >
-                            <Link href="/community">
-                                <Users className="h-4 w-4" />
-                                전체 보기
-                            </Link>
-                        </Button>
+                        {isLoaded && (
+                            <>
+                                {isSignedIn ? (
+                                    <Button 
+                                        variant="outline" 
+                                        asChild
+                                        className="gap-2"
+                                    >
+                                        <Link href="/community">
+                                            <Users className="h-4 w-4" />
+                                            전체 보기
+                                        </Link>
+                                    </Button>
+                                ) : (
+                                    <SignUpButton 
+                                        mode="modal"
+                                        forceRedirectUrl="/community"
+                                    >
+                                        <Button 
+                                            variant="outline" 
+                                            className="gap-2"
+                                        >
+                                            <Users className="h-4 w-4" />
+                                            전체 보기
+                                        </Button>
+                                    </SignUpButton>
+                                )}
+                            </>
+                        )}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {mockPosts.map(post => (
                             <CommunityFeedCard key={post.postId} post={post} />
                         ))}
-                    </div>
-                </section>
-
-                {/* CTA 섹션 */}
-                <section className="text-center py-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl text-white">
-                    <h3 className="text-3xl font-bold mb-4">
-                        지금 시작해보세요
-                    </h3>
-                    <p className="text-xl mb-8 opacity-90">
-                        무료로 AI 이미지 생성을 체험해보세요
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button 
-                            size="lg" 
-                            variant="secondary"
-                            asChild
-                            className="gap-2"
-                        >
-                            <Link href="/generate">
-                                <Zap className="h-5 w-5" />
-                                이미지 생성하기
-                            </Link>
-                        </Button>
-                        <Button 
-                            size="lg" 
-                            variant="outline"
-                            asChild
-                            className="gap-2 text-white border-white hover:bg-white hover:text-purple-600"
-                        >
-                            <Link href="/gallery">
-                                <Images className="h-5 w-5" />
-                                갤러리 둘러보기
-                            </Link>
-                        </Button>
                     </div>
                 </section>
             </main>
