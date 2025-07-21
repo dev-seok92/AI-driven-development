@@ -1,3 +1,20 @@
+// 사용자 인증 관련 인터페이스
+export interface IUser {
+    id: string
+    email: string
+    username?: string
+    firstName?: string
+    lastName?: string
+    profileImageUrl?: string
+    createdAt: string
+}
+
+export interface IAuthState {
+    isLoaded: boolean
+    isSignedIn: boolean
+    user: IUser | null
+}
+
 export interface IPost {
     postId: string
     imageURL: string

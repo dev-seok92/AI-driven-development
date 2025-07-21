@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import Navigation from './Navigation'
 
@@ -79,11 +80,42 @@ export default function MobileMenu({ className }: IMobileMenuProps) {
                         : "opacity-0 transform -translate-y-2 pointer-events-none"
                 )}
             >
-                <div className="px-4 py-4">
+                <div className="px-4 py-4 space-y-4">
+                    {/* 네비게이션 메뉴 */}
                     <Navigation
                         className="flex-col gap-2"
                         onItemClick={closeMenu}
                     />
+                    
+                    {/* 인증 섹션 */}
+                    <div className="border-t pt-4">
+                        <SignedOut>
+                            <div className="flex flex-col gap-2">
+                                <SignInButton mode="modal">
+                                    <Button variant="ghost" size="sm" className="justify-start w-full">
+                                        로그인
+                                    </Button>
+                                </SignInButton>
+                                <SignUpButton mode="modal">
+                                    <Button size="sm" className="justify-start w-full">
+                                        회원가입
+                                    </Button>
+                                </SignUpButton>
+                            </div>
+                        </SignedOut>
+                        <SignedIn>
+                            <div className="flex items-center gap-3">
+                                <UserButton 
+                                    appearance={{
+                                        elements: {
+                                            avatarBox: "w-8 h-8"
+                                        }
+                                    }}
+                                />
+                                <span className="text-sm text-gray-600">내 계정</span>
+                            </div>
+                        </SignedIn>
+                    </div>
                 </div>
             </div>
         </div>
